@@ -48,7 +48,7 @@ func TestEval(t *testing.T) {
 		"2 ++ 2",
 		"2 * (5 + 1",
 		"3 / )(5)",
-		"7 / 0", // TODO: Division by zero not handled
+		"7 / 0",
 	}
 	for i := 0; i < len(expressions); i++ {
 		tree, err := parser.ParseExpr(expressions[i])

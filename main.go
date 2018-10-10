@@ -65,7 +65,11 @@ func Eval(node ast.Node) (float64, error) {
 			if err != nil {
 				return 0, err
 			}
-			return xVal / yVal, nil
+			if yVal != 0 {
+				return xVal / yVal, nil
+			} else {
+				return 0, errors.New("division by zero")
+			}
 		}
 	case *ast.UnaryExpr:
 		if n.Op == token.SUB {
