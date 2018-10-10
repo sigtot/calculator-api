@@ -18,63 +18,67 @@ type CalcRequest struct {
 	Expression string `json:"expression"`
 }
 
-func eval(node ast.Node) int {
+type CalcResponse struct {
+	Result float64 `json:"result"`
+}
+
+func Eval(node ast.Node) (float64, error) {
 	switch n := node.(type) {
 	case *ast.BinaryExpr:
 		switch n.Op {
 		case token.ADD:
-			xVal, err := eval(n.X)
+			xVal, err := Eval(n.X)
 			if err != nil {
 				return 0, err
 			}
-			yVal, err := eval(n.Y)
+			yVal, err := Eval(n.Y)
 			if err != nil {
 				return 0, err
 			}
 			return xVal + yVal, nil
 		case token.SUB:
-			xVal, err := eval(n.X)
+			xVal, err := Eval(n.X)
 			if err != nil {
 				return 0, err
 			}
-			yVal, err := eval(n.Y)
+			yVal, err := Eval(n.Y)
 			if err != nil {
 				return 0, err
 			}
 			return xVal - yVal, nil
 		case token.MUL:
-			xVal, err := eval(n.X)
+			xVal, err := Eval(n.X)
 			if err != nil {
 				return 0, err
 			}
-			yVal, err := eval(n.Y)
+			yVal, err := Eval(n.Y)
 			if err != nil {
 				return 0, err
 			}
 			return xVal * yVal, nil
 		case token.QUO:
-			xVal, err := eval(n.X)
+			xVal, err := Eval(n.X)
 			if err != nil {
 				return 0, err
 			}
-			yVal, err := eval(n.Y)
+			yVal, err := Eval(n.Y)
 			if err != nil {
 				return 0, err
 			}
-			return xVal / yVal, nil // TODO: Currently using integer division. Maybe change it?
+			return xVal / yVal, nil
 		}
 	case *ast.UnaryExpr:
 		if n.Op == token.SUB {
-			val, err := eval(n.X)
+			val, err := Eval(n.X)
 			return -val, err
 		}
 	case *ast.BasicLit:
 		if n.Kind == token.INT || n.Kind == token.FLOAT {
 			val, err := strconv.Atoi(n.Value)
-			return val, err
+			return float64(val), err
 		}
 	case *ast.ParenExpr:
-		return eval(n.X)
+		return Eval(n.X)
 	}
 	return 0, errors.New("unhandled node type")
 }
@@ -82,6 +86,7 @@ func eval(node ast.Node) int {
 func handleCalc(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 
+	// Decode the request body into a go struct
 	var request CalcRequest
 	err := decoder.Decode(&request)
 	if err != nil {
@@ -90,21 +95,26 @@ func handleCalc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fileSet := token.NewFileSet()
+	// Generate an AST from the expression
 	tree, err := parser.ParseExpr(request.Expression)
 	if err != nil {
 		fmt.Println("Bad request, handled error:", err)
 		http.Error(w, "400 bad request", http.StatusBadRequest)
 		return
 	}
-	ast.Print(fileSet, tree)
-	result, err := eval(tree)
+
+	// Evaluate the value from the AST
+	result, err := Eval(tree)
 	if err != nil {
 		fmt.Println("Error during evaluation, probably caused by a bad request", err)
 		http.Error(w, "400 bad request", http.StatusBadRequest)
 		return
 	}
-	fmt.Println("Result:", result)
+
+	// Respond with the result
+	response := CalcResponse{result}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 func apiHandler(w http.ResponseWriter, r *http.Request) {
