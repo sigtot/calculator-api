@@ -1,5 +1,5 @@
 # Calculator API
-This API evaluates basic arithmetic expressions send with a POST request.
+This API evaluates basic arithmetic expressions sent with a POST request.
 
 ## Usage
 Clone and enter the repository
