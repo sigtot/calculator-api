@@ -2,7 +2,7 @@
 This API evaluates basic arithmetic expressions sent with a POST request.
 
 ## Usage
-Clone and enter the repository
+Clone the repo and enter the directory
 ### Start server
 ```bash
 go run main.go
