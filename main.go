@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -22,30 +23,60 @@ func eval(node ast.Node) int {
 	case *ast.BinaryExpr:
 		switch n.Op {
 		case token.ADD:
-			return eval(n.X) + eval(n.Y)
+			xVal, err := eval(n.X)
+			if err != nil {
+				return 0, err
+			}
+			yVal, err := eval(n.Y)
+			if err != nil {
+				return 0, err
+			}
+			return xVal + yVal, nil
 		case token.SUB:
-			return eval(n.X) - eval(n.Y)
+			xVal, err := eval(n.X)
+			if err != nil {
+				return 0, err
+			}
+			yVal, err := eval(n.Y)
+			if err != nil {
+				return 0, err
+			}
+			return xVal - yVal, nil
 		case token.MUL:
-			return eval(n.X) * eval(n.Y)
+			xVal, err := eval(n.X)
+			if err != nil {
+				return 0, err
+			}
+			yVal, err := eval(n.Y)
+			if err != nil {
+				return 0, err
+			}
+			return xVal * yVal, nil
 		case token.QUO:
-			return eval(n.X) / eval(n.Y)
+			xVal, err := eval(n.X)
+			if err != nil {
+				return 0, err
+			}
+			yVal, err := eval(n.Y)
+			if err != nil {
+				return 0, err
+			}
+			return xVal / yVal, nil // TODO: Currently using integer division. Maybe change it?
 		}
 	case *ast.UnaryExpr:
 		if n.Op == token.SUB {
-			return -eval(n.X)
+			val, err := eval(n.X)
+			return -val, err
 		}
 	case *ast.BasicLit:
 		if n.Kind == token.INT || n.Kind == token.FLOAT {
 			val, err := strconv.Atoi(n.Value)
-			if err != nil {
-				fmt.Println(err) // TODO: We should bubble this error up
-			}
-			return val
+			return val, err
 		}
 	case *ast.ParenExpr:
 		return eval(n.X)
 	}
-	return 0 // TODO: Unhandled type: should return error
+	return 0, errors.New("unhandled node type")
 }
 
 func handleCalc(w http.ResponseWriter, r *http.Request) {
@@ -62,12 +93,18 @@ func handleCalc(w http.ResponseWriter, r *http.Request) {
 	fileSet := token.NewFileSet()
 	tree, err := parser.ParseExpr(request.Expression)
 	if err != nil {
-		fmt.Println("Handled error:", err) // TODO: Remove after debugging
+		fmt.Println("Bad request, handled error:", err)
 		http.Error(w, "400 bad request", http.StatusBadRequest)
 		return
 	}
 	ast.Print(fileSet, tree)
-	fmt.Println("Result:", eval(tree))
+	result, err := eval(tree)
+	if err != nil {
+		fmt.Println("Error during evaluation, probably caused by a bad request", err)
+		http.Error(w, "400 bad request", http.StatusBadRequest)
+		return
+	}
+	fmt.Println("Result:", result)
 }
 
 func apiHandler(w http.ResponseWriter, r *http.Request) {
