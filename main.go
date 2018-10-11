@@ -22,51 +22,32 @@ type CalcResponse struct {
 	Result float64 `json:"result"`
 }
 
+// Eval can evaluate mathematical expressions with the tokens +, -, *, / and ()
 func Eval(node ast.Node) (float64, error) {
 	switch n := node.(type) {
 	case *ast.BinaryExpr:
+		var xVal float64
+		var yVal float64
+		var errX error
+		var errY error
 		switch n.Op {
 		case token.ADD:
-			xVal, err := Eval(n.X)
-			if err != nil {
-				return 0, err
-			}
-			yVal, err := Eval(n.Y)
-			if err != nil {
-				return 0, err
-			}
-			return xVal + yVal, nil
+			xVal, errX = Eval(n.X)
+			yVal, errY = Eval(n.Y)
+			return xVal + yVal, orError(errX, errY)
 		case token.SUB:
-			xVal, err := Eval(n.X)
-			if err != nil {
-				return 0, err
-			}
-			yVal, err := Eval(n.Y)
-			if err != nil {
-				return 0, err
-			}
-			return xVal - yVal, nil
+			xVal, errX = Eval(n.X)
+			yVal, errY = Eval(n.Y)
+			return xVal - yVal, orError(errX, errY)
 		case token.MUL:
-			xVal, err := Eval(n.X)
-			if err != nil {
-				return 0, err
-			}
-			yVal, err := Eval(n.Y)
-			if err != nil {
-				return 0, err
-			}
-			return xVal * yVal, nil
+			xVal, errX = Eval(n.X)
+			yVal, errY = Eval(n.Y)
+			return xVal * yVal, orError(errX, errY)
 		case token.QUO:
-			xVal, err := Eval(n.X)
-			if err != nil {
-				return 0, err
-			}
-			yVal, err := Eval(n.Y)
-			if err != nil {
-				return 0, err
-			}
+			xVal, errX = Eval(n.X)
+			yVal, errY = Eval(n.Y)
 			if yVal != 0 {
-				return xVal / yVal, nil
+				return xVal / yVal, orError(errX, errY)
 			} else {
 				return 0, errors.New("division by zero")
 			}
@@ -85,6 +66,15 @@ func Eval(node ast.Node) (float64, error) {
 		return Eval(n.X)
 	}
 	return 0, errors.New("unhandled node type")
+}
+
+// Returns the error if either err1 or err2 are non-nil.
+// Returns err1 if both are non-nil.
+func orError(err1 error, err2 error) error {
+	if err1 != nil {
+		return err1
+	}
+	return err2
 }
 
 func handleCalc(w http.ResponseWriter, r *http.Request) {

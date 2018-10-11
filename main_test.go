@@ -40,6 +40,7 @@ func TestEval(t *testing.T) {
 			fmt.Printf(" (OK)\n")
 		} else {
 			fmt.Printf(" (FAIL) (expected %f)\n", expectations[i])
+			t.Fail()
 		}
 	}
 
